@@ -1,0 +1,16 @@
+/project/project/
+target/
+/.ensime
+/.ensime_cache/
+/.clover/
+/.idea/
+/.bsp/
+/.metals/
+.bloop/
+metals.sbt
+/credentials.sbt
+*.class
+*.sublime-workspace
+*.iml
+*.log
+/data/
