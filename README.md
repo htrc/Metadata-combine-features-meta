@@ -1,9 +1,9 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/htrc/Metadata-combine-features-meta/ci.yml?branch=main)](https://github.com/htrc/Metadata-combine-features-meta/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/github/htrc/Metadata-bibframe2jsonld/graph/badge.svg?token=otalCjsK9m)](https://codecov.io/github/htrc/Metadata-bibframe2jsonld)
+[![codecov](https://codecov.io/github/htrc/Metadata-combine-features-meta/graph/badge.svg?token=ADf5xXnA6Q)](https://codecov.io/github/htrc/Metadata-combine-features-meta)
 [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/htrc/Metadata-combine-features-meta?include_prereleases&sort=semver)](https://github.com/htrc/Metadata-combine-features-meta/releases/latest)
 
-# Metadata-bibframe2jsonld
-Used to convert enriched BIBFRAME-XML to HTRC metadata JSONLD
+# Metadata-combine-features-meta
+Combines 'features' with 'metadata' sequence files to generate an EF file
 
 # Build
 * To generate a package that can be invoked via a shell script, run:  
