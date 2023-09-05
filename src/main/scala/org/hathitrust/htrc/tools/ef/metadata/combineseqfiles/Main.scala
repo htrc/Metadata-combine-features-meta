@@ -12,7 +12,10 @@ import play.api.libs.json.{JsObject, JsValue, Json}
 import scala.io.Codec
 import scala.language.reflectiveCalls
 import Helper.{compress, decompress, manualBroadcastHashJoin}
+import org.apache.hadoop.fs.Path
 import org.apache.spark.storage.StorageLevel
+import org.hathitrust.htrc.tools.spark.errorhandling.ErrorAccumulator
+import org.hathitrust.htrc.tools.spark.errorhandling.RddExtensions.RddWithTryFunctions
 import org.hathitrust.htrc.tools.spark.utils.Helper.stopSparkAndExit
 
 object Main {
@@ -87,14 +90,17 @@ object Main {
       //      }
       //      .saveAsSequenceFile(outputPath + "/output", Some(classOf[org.apache.hadoop.io.compress.BZip2Codec]))
 
-      val joinedRDD = sc.sequenceFile[String, String](featuresPath)
-        .join(sc.sequenceFile[String, String](metadataPath))
-        .repartition(numPartitions)
+      val joinedRDD =
+        sc
+          .sequenceFile[String, String](featuresPath)
+          .join(sc.sequenceFile[String, String](metadataPath))
+//        .repartition(numPartitions)
       //      .persist(StorageLevel.DISK_ONLY)
 
       //logger.info("Persisted RDD count: {}", joinedRDD.count())
 
-      val resultRDD = joinedRDD.map { case (htid, (features, meta)) =>
+      val joinedErrorAggregator = new ErrorAccumulator[(String, (String, String)), String](_._1)(sc)
+      val resultRDD = joinedRDD.tryMap { case (htid, (features, meta)) =>
         val jsonFeatures = Json.parse(features).as[JsObject]
         val jsonMeta = Json.parse(meta).as[JsObject]
         val jsonEF = Json.obj(
@@ -111,7 +117,7 @@ object Main {
             "id" -> (jsonFeatures \ "id").as[String],
             "type" -> (jsonFeatures \ "type").as[String],
             //              "creator" -> (jsonFeatures \ "creator").as[JsObject],
-            "dateCreated" -> (jsonFeatures \ "dateCreated").as[String].take(10).replaceAll("-", "").toInt,
+            "dateCreated" -> (jsonFeatures \ "dateCreated").as[Int],
             "pageCount" -> (jsonFeatures \ "pageCount").as[Int],
             "pages" -> (jsonFeatures \ "pages").as[List[JsObject]].map { page =>
               val language = (page \ "language").as[JsValue]
@@ -120,7 +126,7 @@ object Main {
           )
         )
         htid -> jsonEF.toString()
-      }
+      }(joinedErrorAggregator)
       //      .coalesce(numPartitions)
 
       if (saveAsSeqFile)
@@ -163,6 +169,11 @@ object Main {
       //
       //    resultRDD
       //      .saveAsSequenceFile(outputPath + "/output", Some(classOf[org.apache.hadoop.io.compress.BZip2Codec]))
+
+      if (joinedErrorAggregator.nonEmpty) {
+        logger.info("Writing error report(s)...")
+        joinedErrorAggregator.saveErrors(new Path(outputPath, "joinrdd_errors.txt"))
+      }
 
       // record elapsed time and report it
       val t1 = System.nanoTime()
